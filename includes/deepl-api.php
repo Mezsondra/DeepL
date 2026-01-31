@@ -24,7 +24,13 @@ function dst_translate_text($text, $target_lang = 'EN', $url = '') {
     $cached = get_transient($cache_key);
     if ($cached) return $cached;
 
-    $endpoint = 'https://api-free.deepl.com/v2/translate';
+    // Determine correct endpoint based on API key suffix
+    if (substr($api_key, -3) === ':fx') {
+        $endpoint = 'https://api-free.deepl.com/v2/translate';
+    } else {
+        $endpoint = 'https://api.deepl.com/v2/translate';
+    }
+
     $args = [
         'body' => [
             'auth_key'    => $api_key,
@@ -44,9 +50,14 @@ function dst_translate_text($text, $target_lang = 'EN', $url = '') {
     }
 
     $code = wp_remote_retrieve_response_code($response);
-    $body_json = json_decode(wp_remote_retrieve_body($response), true);
+    $body = wp_remote_retrieve_body($response);
+    $body_json = json_decode($body, true);
 
     if ($code !== 200 || empty($body_json['translations'][0]['text'])) {
+        // Log error for debugging
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('DeepL API Error: Code ' . $code . ' Response: ' . print_r($body, true));
+        }
         return $text;
     }
 
