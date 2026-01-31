@@ -30,6 +30,7 @@ function dst_translate_text($text, $target_lang = 'EN', $url = '') {
             'auth_key'    => $api_key,
             'text'        => $text,
             'target_lang' => $target_lang,
+            'tag_handling' => 'html',
             // You can add formality or split_sentences options if desired
             // 'formality' => 'prefer_less' / 'prefer_more',
             // 'split_sentences' => '1'
