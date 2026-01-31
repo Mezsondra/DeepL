@@ -32,13 +32,18 @@ function dst_translate_post_content($content){
     if (trim(wp_strip_all_tags($masked, true)) === '') return $content;
 
     $rules = dst_get_exclusion_rules();
+    $balanced = force_balance_tags($masked);
+    $wrapped = '<div data-dst-wrapper="1">'.$balanced.'</div>';
     $translated = dst_translate_text(
-        $masked,
+        $wrapped,
         $req_lang,
         (function_exists('get_permalink') ? get_permalink() : ''),
         true,
         $rules['html_tags']
     );
+    if (preg_match('/^<div[^>]*data-dst-wrapper="1"[^>]*>(.*)<\\/div>$/is', $translated, $matches)) {
+        $translated = $matches[1];
+    }
 
     // Restore masked pieces
     $final = dst_unmask_exclusions($translated, $map);
