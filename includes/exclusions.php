@@ -22,20 +22,22 @@ function dst_get_exclusion_rules(){
  * Mask exclusions with tokens so they won't be sent to DeepL.
  * Returns array: [masked_content, map]
  */
-function dst_mask_exclusions($content){
+function dst_mask_exclusions($content, $skip_html_tags = false){
     $rules = dst_get_exclusion_rules();
     $map = [];
     $masked = $content;
 
     // Mask HTML tag blocks
-    foreach ($rules['html_tags'] as $tag){
-        $tag = preg_quote($tag, '/');
-        $pattern = "/<{$tag}\\b[^>]*?>.*?<\\/{$tag}>/is";
-        $masked = preg_replace_callback($pattern, function($m) use (&$map){
-            $token = '[[DST_HTML_'.md5($m[0]).'_'.substr(wp_hash($m[0]),0,8).']]';
-            $map[$token] = $m[0];
-            return $token;
-        }, $masked);
+    if (!$skip_html_tags) {
+        foreach ($rules['html_tags'] as $tag){
+            $tag = preg_quote($tag, '/');
+            $pattern = "/<{$tag}\\b[^>]*?>.*?<\\/{$tag}>/is";
+            $masked = preg_replace_callback($pattern, function($m) use (&$map){
+                $token = '[[DST_HTML_'.md5($m[0]).'_'.substr(wp_hash($m[0]),0,8).']]';
+                $map[$token] = $m[0];
+                return $token;
+            }, $masked);
+        }
     }
 
     // Mask specific shortcodes

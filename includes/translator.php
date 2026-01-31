@@ -25,22 +25,28 @@ function dst_translate_post_content($content){
     // If base language (no translation needed)
     if ($req_lang === $base_lang) return $content;
 
-    // Mask exclusions to preserve them exactly
-    list($masked, $map) = dst_mask_exclusions($content);
+    // Mask exclusions to preserve them exactly (keep HTML tags so DeepL can handle them)
+    list($masked, $map) = dst_mask_exclusions($content, true);
 
-    // Strip HTML to translate only visible text; keep rough paragraph boundaries
-    $text = wp_strip_all_tags($masked, true);
     // Avoid sending empty or tiny content
-    if (trim($text) === '') return $content;
+    if (trim(wp_strip_all_tags($masked, true)) === '') return $content;
 
-    $translated = dst_translate_text($text, $req_lang, (function_exists('get_permalink') ? get_permalink() : ''));
-
-    // Very simple remap: wrap in paragraphs.
-    // For richer mapping, you could split by original <p> counts, etc.
-    $remapped = wpautop($translated);
+    $rules = dst_get_exclusion_rules();
+    $balanced = force_balance_tags($masked);
+    $wrapped = '<div data-dst-wrapper="1">'.$balanced.'</div>';
+    $translated = dst_translate_text(
+        $wrapped,
+        $req_lang,
+        (function_exists('get_permalink') ? get_permalink() : ''),
+        true,
+        $rules['html_tags']
+    );
+    if (preg_match('/^<div[^>]*data-dst-wrapper="1"[^>]*>(.*)<\\/div>$/is', $translated, $matches)) {
+        $translated = $matches[1];
+    }
 
     // Restore masked pieces
-    $final = dst_unmask_exclusions($remapped, $map);
+    $final = dst_unmask_exclusions($translated, $map);
     return $final;
 }
 add_filter('the_content', 'dst_translate_post_content', 20);
