@@ -7,12 +7,14 @@ function dst_cache_key($text, $target_lang, $url){
 
 /**
  * Translate text using DeepL
- * @param string $text Plain text (HTML should be stripped or masked prior)
+ * @param string $text Plain text or HTML (HTML should be masked prior)
  * @param string $target_lang e.g. EN, TR, DE
  * @param string $url Current URL/permalink for better cache segmentation
+ * @param bool $is_html Whether the text is HTML
+ * @param array $ignore_tags HTML tags to skip translating when $is_html is true
  * @return string translated text (or original on failure)
  */
-function dst_translate_text($text, $target_lang = 'EN', $url = '') {
+function dst_translate_text($text, $target_lang = 'EN', $url = '', $is_html = false, $ignore_tags = []) {
     $api_key = trim((string)get_option('dst_api_key'));
     if (!$api_key || !$text) return $text;
 
@@ -36,6 +38,12 @@ function dst_translate_text($text, $target_lang = 'EN', $url = '') {
         ],
         'timeout' => 25
     ];
+    if ($is_html) {
+        $args['body']['tag_handling'] = 'html';
+        if (!empty($ignore_tags)) {
+            $args['body']['ignore_tags'] = implode(',', array_map('trim', $ignore_tags));
+        }
+    }
 
     $response = wp_remote_post($endpoint, $args);
     if (is_wp_error($response)) {
