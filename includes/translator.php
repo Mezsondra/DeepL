@@ -28,16 +28,16 @@ function dst_translate_post_content($content){
     // Mask exclusions to preserve them exactly
     list($masked, $map) = dst_mask_exclusions($content);
 
-    // Strip HTML to translate only visible text; keep rough paragraph boundaries
-    $text = wp_strip_all_tags($masked, true);
+    // We send HTML content to DeepL so we preserve structure
+    $text = $masked;
+
     // Avoid sending empty or tiny content
     if (trim($text) === '') return $content;
 
     $translated = dst_translate_text($text, $req_lang, (function_exists('get_permalink') ? get_permalink() : ''));
 
-    // Very simple remap: wrap in paragraphs.
-    // For richer mapping, you could split by original <p> counts, etc.
-    $remapped = wpautop($translated);
+    // Result is already HTML
+    $remapped = $translated;
 
     // Restore masked pieces
     $final = dst_unmask_exclusions($remapped, $map);
